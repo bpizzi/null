@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 // Bool is a nullable bool. False input is considered null.
@@ -120,4 +121,56 @@ func (b Bool) IsZero() bool {
 // Equal returns true if both booleans are true and valid, or if both booleans are either false or invalid.
 func (b Bool) Equal(other Bool) bool {
 	return b.ValueOrZero() == other.ValueOrZero()
+}
+
+func (ib *Bool) Scan(value interface{}) error {
+	switch value.(type) {
+	case int64:
+		if value.(int64) == 0 {
+			*ib = NewBool(false, true)
+		} else if value.(int64) == 1 {
+			*ib = NewBool(true, true)
+		} else {
+			return fmt.Errorf("Cannot scan value into Bool, value must be 0 or 1, value=%d", value.(int64))
+		}
+	case float64:
+		if value.(float64) == 0 {
+			*ib = NewBool(false, true)
+		} else if value.(float64) == 1 {
+			*ib = NewBool(true, true)
+		} else {
+			return fmt.Errorf("Cannot scan value into Bool, value must be 0 or 1, value=%f", value.(float64))
+		}
+	case string:
+		v, err := strconv.Atoi(value.(string))
+		if err != nil {
+			return err
+		}
+
+		if v == 0 {
+			*ib = NewBool(false, true)
+		} else if v == 1 {
+			*ib = NewBool(true, true)
+		} else {
+			return fmt.Errorf("Cannot scan value into Bool, value must be 0 or 1, value=%s", value.(string))
+		}
+	case []uint8:
+		val := string([]byte(value.([]uint8)[:]))
+		v, err := strconv.Atoi(val)
+		if err != nil {
+			return err
+		}
+
+		if v == 0 {
+			*ib = NewBool(false, true)
+		} else if v == 1 {
+			*ib = NewBool(true, true)
+		} else {
+			return fmt.Errorf("Cannot scan value into Bool, value must be 0 or 1, value=%s", val)
+		}
+	default:
+		return fmt.Errorf("Cannot scan value into Bool, value type is not 'int', value='%+v'", value)
+	}
+
+	return nil
 }
